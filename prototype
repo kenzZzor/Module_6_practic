@@ -118,7 +118,7 @@ class Program
 {
     static void Main(string[] args)
     {
-        // Создаем начальные объекты оружия, брони и способностей
+
         Weapon sword = new Weapon("Sword", 50);
         Armor shield = new Armor("Shield", 20);
         List<Skill> skills = new List<Skill>
@@ -133,10 +133,8 @@ class Program
         Console.WriteLine("Original Character:");
         Console.WriteLine(hero);
 
-        // Клонируем персонажа
         Character clonedHero = (Character)hero.Clone();
 
-        // Изменяем клонированного персонажа
         clonedHero.Name = "Cloned Hero";
         clonedHero.Weapon.Name = "Axe";
         clonedHero.Weapon.Damage = 60;
