@@ -1,1 +1,153 @@
+// Интерфейс для всех объектов которые будут поддерживать клонирование
+public interface ICloneable
+{
+    ICloneable Clone();
+}
+
+public class Weapon : ICloneable
+{
+    public string Name { get; set; }
+    public int Damage { get; set; }
+
+    public Weapon(string name, int damage)
+    {
+        Name = name;
+        Damage = damage;
+    }
+
+    public ICloneable Clone()
+    {
+        return new Weapon(Name, Damage);
+    }
+
+    public override string ToString()
+    {
+        return $"{Name} (Damage: {Damage})";
+    }
+}
+
+public class Armor : ICloneable
+{
+    public string Name { get; set; }
+    public int Defense { get; set; }
+
+    public Armor(string name, int defense)
+    {
+        Name = name;
+        Defense = defense;
+    }
+
+    public ICloneable Clone()
+    {
+        return new Armor(Name, Defense);
+    }
+
+    public override string ToString()
+    {
+        return $"{Name} (Defense: {Defense})";
+    }
+}
+
+public class Skill : ICloneable
+{
+    public string Name { get; set; }
+    public int Power { get; set; }
+
+    public Skill(string name, int power)
+    {
+        Name = name;
+        Power = power;
+    }
+
+    public ICloneable Clone()
+    {
+        return new Skill(Name, Power);
+    }
+
+    public override string ToString()
+    {
+        return $"{Name} (Power: {Power})";
+    }
+}
+
+public class Character : ICloneable
+{
+    public string Name { get; set; }
+    public int Health { get; set; }
+    public int Strength { get; set; }
+    public int Agility { get; set; }
+    public int Intelligence { get; set; }
+
+    public Weapon Weapon { get; set; }
+    public Armor Armor { get; set; }
+    public List<Skill> Skills { get; set; }
+
+    public Character(string name, int health, int strength, int agility, int intelligence, Weapon weapon, Armor armor, List<Skill> skills)
+    {
+        Name = name;
+        Health = health;
+        Strength = strength;
+        Agility = agility;
+        Intelligence = intelligence;
+        Weapon = weapon;
+        Armor = armor;
+        Skills = skills;
+    }
+
+    public ICloneable Clone()
+    {
+        // Глубокое копирование персонажа с копированием оружия, брони и списка способностей
+        var clonedSkills = new List<Skill>();
+        foreach (var skill in Skills)
+        {
+            clonedSkills.Add((Skill)skill.Clone());
+        }
+
+        return new Character(Name, Health, Strength, Agility, Intelligence, (Weapon)Weapon.Clone(), (Armor)Armor.Clone(), clonedSkills);
+    }
+
+    public override string ToString()
+    {
+        return $"Character: {Name}, Health: {Health}, Strength: {Strength}, Agility: {Agility}, Intelligence: {Intelligence}, \n" +
+               $"Weapon: {Weapon}, Armor: {Armor}, \nSkills: {string.Join(", ", Skills)}";
+    }
+}
+
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        // Создаем начальные объекты оружия, брони и способностей
+        Weapon sword = new Weapon("Sword", 50);
+        Armor shield = new Armor("Shield", 20);
+        List<Skill> skills = new List<Skill>
+        {
+            new Skill("Fireball", 40),
+            new Skill("Slash", 30)
+        };
+
+        // Создаем персонажа
+        Character hero = new Character("Hero", 100, 50, 40, 30, sword, shield, skills);
+
+        Console.WriteLine("Original Character:");
+        Console.WriteLine(hero);
+
+        // Клонируем персонажа
+        Character clonedHero = (Character)hero.Clone();
+
+        // Изменяем клонированного персонажа
+        clonedHero.Name = "Cloned Hero";
+        clonedHero.Weapon.Name = "Axe";
+        clonedHero.Weapon.Damage = 60;
+        clonedHero.Skills[0].Name = "Ice Blast";
+
+        Console.WriteLine("\nCloned Character (with modifications):");
+        Console.WriteLine(clonedHero);
+
+        Console.WriteLine("\nOriginal Character (after cloning):");
+        Console.WriteLine(hero);
+    }
+}
+
 
