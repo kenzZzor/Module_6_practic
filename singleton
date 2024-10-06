@@ -1,1 +1,181 @@
+public enum LogLevel
+{
+    INFO,
+    WARNING,
+    ERROR
+}
 
+public sealed class Logger
+{
+    private static Logger _instance;
+    private static readonly object _lock = new object();
+    private LogLevel _currentLogLevel;
+    private string _logFilePath;
+    private static readonly object _fileLock = new object();
+
+    private Logger()
+    {
+        _currentLogLevel = LogLevel.INFO;  
+        _logFilePath = "log.txt";          
+    }
+
+    // Метод для получения единственного экземпляра Logger
+    public static Logger GetInstance()
+    {
+        if (_instance == null)
+        {
+            lock (_lock)
+            {
+                if (_instance == null)
+                {
+                    _instance = new Logger();
+                }
+            }
+        }
+        return _instance;
+    }
+
+    public void SetLogLevel(LogLevel level)
+    {
+        _currentLogLevel = level;
+    }
+
+    public void Log(string message, LogLevel level)
+    {
+        if (level >= _currentLogLevel)
+        {
+            string logEntry = $"{DateTime.Now}: [{level}] {message}";
+            lock (_fileLock)
+            {
+                File.AppendAllText(_logFilePath, logEntry + Environment.NewLine);
+            }
+        }
+    }
+
+    public void LoadConfiguration(string configFilePath)
+    {
+        // загрузкa данных из JSON 
+        _logFilePath = "configLog.txt";  // путь к файлу 
+        _currentLogLevel = LogLevel.WARNING;  
+    }
+
+
+// LOG READER
+public class LogReader
+{
+    private string _logFilePath;
+
+    public LogReader(string logFilePath)
+    {
+        _logFilePath = logFilePath;
+    }
+
+    // Чтение и фильтрация логов по уровню
+    public void ReadLogs(LogLevel level)
+    {
+        if (File.Exists(_logFilePath))
+        {
+            string[] logEntries = File.ReadAllLines(_logFilePath);
+            foreach (var entry in logEntries)
+            {
+                if (entry.Contains($"[{level}]"))
+                {
+                    Console.WriteLine(entry);
+                }
+            }
+        }
+        else
+        {
+            Console.WriteLine("Файл логов не найден.");
+        }
+    }
+}
+
+
+// Дополнительные задания
+private void RotateLogsIfNeeded()
+{
+    lock (_fileLock)
+    {
+        FileInfo fileInfo = new FileInfo(_logFilePath);
+        if (fileInfo.Length > 10 * 1024)  // Если файл больше 10 KB
+        {
+            string newFilePath = _logFilePath.Replace(".txt", $"_{DateTime.Now:yyyyMMddHHmmss}.txt");
+            File.Move(_logFilePath, newFilePath);
+        }
+    }
+}
+
+public void Log(string message, LogLevel level)
+{
+    if (level >= _currentLogLevel)
+    {
+        string logEntry = $"{DateTime.Now}: [{level}] {message}";
+        lock (_fileLock)
+        {
+            File.AppendAllText(_logFilePath, logEntry + Environment.NewLine);
+            Console.WriteLine(logEntry);  // Логирование в консоль
+        }
+    }
+}
+
+public void ReadLogsByTime(DateTime from, DateTime to)
+{
+    if (File.Exists(_logFilePath))
+    {
+        string[] logEntries = File.ReadAllLines(_logFilePath);
+        foreach (var entry in logEntries)
+        {
+            if (DateTime.TryParse(entry.Substring(0, 19), out DateTime logTime))
+            {
+                if (logTime >= from && logTime <= to)
+                {
+                    Console.WriteLine(entry);
+                }
+            }
+        }
+    }
+}
+
+
+// Main
+class Program
+{
+    static void Main(string[] args)
+    {
+        Logger logger = Logger.GetInstance();
+        logger.LoadConfiguration("config.json"); // Загрузка конфигурации
+
+        Thread thread1 = new Thread(() => LogMessages(logger, "Thread 1", LogLevel.INFO));
+        Thread thread2 = new Thread(() => LogMessages(logger, "Thread 2", LogLevel.WARNING));
+        Thread thread3 = new Thread(() => LogMessages(logger, "Thread 3", LogLevel.ERROR));
+
+        thread1.Start();
+        thread2.Start();
+        thread3.Start();
+
+        thread1.Join();
+        thread2.Join();
+        thread3.Join();
+
+        // Чтение логов
+        LogReader logReader = new LogReader("configLog.txt");
+        Console.WriteLine("\n[INFO] Логи:");
+        logReader.ReadLogs(LogLevel.INFO);
+
+        Console.WriteLine("\n[WARNING] Логи:");
+        logReader.ReadLogs(LogLevel.WARNING);
+
+        Console.WriteLine("\n[ERROR] Логи:");
+        logReader.ReadLogs(LogLevel.ERROR);
+    }
+
+    static void LogMessages(Logger logger, string threadName, LogLevel logLevel)
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            logger.Log($"{threadName} сообщает: Это сообщение номер {i + 1}", logLevel);
+            Thread.Sleep(500);  // Симуляция задержки для многопоточности
+        }
+    }
+}
